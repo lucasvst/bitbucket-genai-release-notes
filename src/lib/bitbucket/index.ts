@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import * as dotenv from 'dotenv';
 
-import type { Repository, Commit, PaginatedList } from './types';
+import { Repository, Commit, PaginatedList } from './types';
 
 dotenv.config();
 
