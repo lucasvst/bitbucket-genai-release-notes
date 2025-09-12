@@ -1,4 +1,4 @@
-export type PaginatedList<T> = {
+export interface PaginatedList<T> {
     values: Array<T>
     next?: string
 }
@@ -107,14 +107,69 @@ export interface Repository {
     has_wiki: boolean;
 }
 
-export type Commit = {
-    hash: string,
-    date: string,
-    //   author: [Object],
-    message: string,
-    //   summary: [Object],
-    //   links: [Object],
-    //   parents: [Array],
-    //   rendered: [Object],
-    //   repository: [Object]
+export interface Author {
+    type: "author";
+    raw: string;
+}
+
+export interface Summary {
+    type: "rendered";
+    raw: string;
+    markup: "markdown";
+    html: string;
+}
+
+export interface CommitLinks {
+    self: Link;
+    html: Link;
+    diff: Link;
+    approve: Link;
+    comments: Link;
+    statuses: Link;
+    patch: Link;
+}
+
+export interface Parent {
+    hash: string;
+    links: {
+        self: Link;
+        html: Link;
+    };
+    type: "commit";
+}
+
+export interface RenderedMessage {
+    type: "rendered";
+    raw: string;
+    markup: "markdown";
+    html: string;
+}
+
+export interface Rendered {
+    message: RenderedMessage;
+}
+
+export interface CommitRepository {
+    type: "repository";
+    full_name: string;
+    links: {
+        self: Link;
+        html: Link;
+        avatar: Link;
+    };
+    name: string;
+    uuid: string;
+}
+
+export interface Commit {
+    type: "commit";
+    hash: string;
+    date: string;
+    author: Author;
+    message: string;
+    summary: Summary;
+    links: CommitLinks;
+    parents: Parent[];
+    rendered: Rendered;
+    repository: CommitRepository;
 }
