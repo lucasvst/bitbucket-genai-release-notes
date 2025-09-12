@@ -7,6 +7,8 @@ import { genAI } from './lib/gemini';
 
 const distPath = path.resolve(__dirname, '..', 'dist');
 
+const UPDATED_ON_LAST_DAYS = 7
+
 if (!fs.existsSync(distPath)) {
   console.info('Creating dist folder...')
   fs.mkdirSync(distPath, { recursive: true });
@@ -15,14 +17,14 @@ if (!fs.existsSync(distPath)) {
 async function main () {
 
   console.info('Listing repositories...')
-  const repos = await listRepositories()
+  const repos = await listRepositories({ updatedOnLastDays: UPDATED_ON_LAST_DAYS })
 
   const prompt = await getPrompt(PROMPT_ENUM.RELEASE_NOTES)
 
   for (const repo of repos) {
 
-    console.log(`Listing logs for ${repo.name}...`)
-    const commits = await getGitLog({ repositoryName: repo.name });
+    console.info(`Listing logs for ${repo.name}...`)
+    const commits = await getGitLog({ repositoryName: repo.name, updatedOnLastDays: UPDATED_ON_LAST_DAYS });
 
     const contents = `
       ${prompt}
