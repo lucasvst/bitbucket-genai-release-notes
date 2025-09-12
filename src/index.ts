@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import { checkbox } from '@inquirer/prompts';
+
 import { getGitLog, listRepositories } from './lib/bitbucket';
 import { getPrompt, PROMPT_ENUM } from './lib/prompts';
 import { genAI } from './lib/gemini';
@@ -16,20 +18,27 @@ if (!fs.existsSync(distPath)) {
 
 async function main () {
 
-  console.info('Listing repositories...')
-  const repos = await listRepositories({ updatedOnLastDays: UPDATED_ON_LAST_DAYS })
-
   const prompt = await getPrompt(PROMPT_ENUM.RELEASE_NOTES)
 
-  for (const repo of repos) {
+  console.info('Listing repositories...')
+  const _repos = await listRepositories({ updatedOnLastDays: UPDATED_ON_LAST_DAYS })
 
-    console.info(`Listing logs for ${repo.name}...`)
-    const commits = await getGitLog({ repositoryName: repo.name, updatedOnLastDays: UPDATED_ON_LAST_DAYS });
+  const repos = await checkbox({
+    message: 'Select repositories to generate release notes',
+    choices: _repos.map(repo => ({ name: repo.name, value: repo.name }))
+  })
+
+  for (const repoName of repos) {
+
+    console.info(`Listing logs for ${repoName}...`)
+    const commits = await getGitLog({ repositoryName: repoName, updatedOnLastDays: UPDATED_ON_LAST_DAYS });
 
     const contents = `
       ${prompt}
 
-      repository: ${repo.name}
+      data de hoje: ${new Date().toISOString()}
+
+      repository: ${repoName}
 
       commits: ${JSON.stringify(commits.map(commit => ({
         hash: commit.hash,
@@ -39,14 +48,14 @@ async function main () {
       })))}
     `
 
-    console.info(`Generating release notes for ${repo.name}...`)
+    console.info(`Generating release notes for ${repoName}...`)
     const response = await genAI.models.generateContent({
       model: 'gemini-2.5-flash',
       contents,
     })
 
-    console.info(`Saving release notes for ${repo.name}...`)
-    const filePath = path.resolve(distPath, `${repo.name}.md`);
+    console.info(`Saving release notes for ${repoName}...`)
+    const filePath = path.resolve(distPath, `${repoName}.md`);
     fs.writeFileSync(filePath, response.text!);
   }
 }
