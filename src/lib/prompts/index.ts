@@ -10,7 +10,6 @@ const PROMPTS = {
 }
 
 export async function getPrompt (prompt: PROMPT_ENUM) {
-    console.log(prompt)
     const fileContents = await readFile(path.join(__dirname, PROMPTS[prompt]), 'utf8');
     return fileContents
 }
