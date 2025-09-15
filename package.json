@@ -1,4 +1,13 @@
 {
+  "name": "bitbucket-release-notes",
+  "version": "1.0.0",
+  "description": "A command-line tool that automatically generates release notes for your Bitbucket repositories using the Gemini API.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucasvst/bitbucket-genai-release-notes"
+  },
+  "author": "Lucas Teles <lucasvst@gmail.com>",
+  "license": "MIT",
   "dependencies": {
     "@google/genai": "^1.19.0",
     "@inquirer/prompts": "^7.8.4",
