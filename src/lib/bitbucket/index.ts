@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import * as dotenv from 'dotenv';
 
-import { Repository, Commit, PaginatedList } from './types';
+import { Repository, Commit, PaginatedList, Branch } from './types';
 
 dotenv.config();
 
@@ -43,9 +43,35 @@ export async function listRepositories(params: GetBitbucketReposParams = {}): Pr
     }
 }
 
+// LIST BRANCHES BY REPOSITORY
+interface listBranchesParams {
+    repositoryName: string
+}
+export async function listBranches(params: listBranchesParams): Promise<Branch[]> {
+
+    let url: string | undefined = `${BITBUCKET_API_URL}/repositories/${BITBUCKET_WORKSPACE}/${params.repositoryName}/refs/branches`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Basic ${credentials}`,
+                'Content-Type': 'application/json'
+            },
+        });
+
+        const data = await response.json() as PaginatedList<Branch>;
+        return data.values || [];
+    } catch (error) {
+        console.error(`Error fetching Bitbucket branches for ${params.repositoryName}:`, error);
+        return [];
+    }
+}
+
 // GET COMMITS BY REPOSITORY
 interface gitLogParams {
     repositoryName: string
+    branchName?: string
     updatedOnLastDays?: number;
 }
 export async function getGitLog(params: gitLogParams): Promise<Commit[]> {
@@ -54,18 +80,17 @@ export async function getGitLog(params: gitLogParams): Promise<Commit[]> {
     const _updatedOnLastDays = params.updatedOnLastDays || 7;
     const _requestDate = new Date(_todayDate.getTime() - _updatedOnLastDays * 24 * 60 * 60 * 1000);
 
-    let url: string | undefined = `${BITBUCKET_API_URL}/repositories/${BITBUCKET_WORKSPACE}/${params.repositoryName}/commits?pagelen=2`;
+    let url: string | undefined = `${BITBUCKET_API_URL}/repositories/${BITBUCKET_WORKSPACE}/${params.repositoryName}/commits/${params.branchName || ''}`;
     const allCommits: Commit[] = [];
 
     try {
         while (url) {
             const response = await fetch(url, {
-                method: 'POST',
+                method: 'GET',
                 headers: {
                     'Authorization': `Basic ${credentials}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({})
             });
 
             const data = await response.json() as PaginatedList<Commit>;

@@ -1,15 +1,13 @@
 import fs from 'fs';
 import path from 'path';
 
-import { checkbox } from '@inquirer/prompts';
+import { checkbox, number, select } from '@inquirer/prompts';
 
-import { getGitLog, listRepositories } from './lib/bitbucket';
+import { getGitLog, listBranches, listRepositories } from './lib/bitbucket';
 import { getPrompt, PROMPT_ENUM } from './lib/prompts';
 import { genAI } from './lib/gemini';
 
 const distPath = path.resolve(__dirname, '..', 'dist');
-
-const UPDATED_ON_LAST_DAYS = 7
 
 if (!fs.existsSync(distPath)) {
   console.info('Creating dist folder...')
@@ -20,8 +18,15 @@ async function main () {
 
   const prompt = await getPrompt(PROMPT_ENUM.RELEASE_NOTES)
 
+  const updatedOnLastDays = await number({
+    message: "How many days you want to include in the release notes?",
+    default: 7,
+    min: 1,
+    max: 365,
+  })
+
   console.info('Listing repositories...')
-  const _repos = await listRepositories({ updatedOnLastDays: UPDATED_ON_LAST_DAYS })
+  const _repos = await listRepositories({ updatedOnLastDays: updatedOnLastDays })
 
   const repos = await checkbox({
     message: 'Select repositories to generate release notes',
@@ -30,8 +35,19 @@ async function main () {
 
   for (const repoName of repos) {
 
-    console.info(`Listing logs for ${repoName}...`)
-    const commits = await getGitLog({ repositoryName: repoName, updatedOnLastDays: UPDATED_ON_LAST_DAYS });
+    console.info(`Listing branches for repository ${repoName}...`)
+    const _branches = await listBranches({ repositoryName: repoName });
+    const branch = await select({
+      message: `Select a branch to generate release notes for ${repoName}`,
+      choices: _branches.map(branch => ({ name: branch.name, value: branch.name }))
+    })
+
+    console.info(`Listing logs for repository ${repoName} branch ${branch}...`)
+    const commits = await getGitLog({
+      repositoryName: repoName,
+      updatedOnLastDays: updatedOnLastDays,
+      branchName: branch,
+    });
 
     const contents = `
       ${prompt}
@@ -48,7 +64,7 @@ async function main () {
       })))}
     `
 
-    console.info(`Generating release notes for ${repoName}...`)
+    console.info(`Generating release notes for repository ${repoName} branch ${branch}...`)
     const response = await genAI.models.generateContent({
       model: 'gemini-2.5-flash',
       contents,

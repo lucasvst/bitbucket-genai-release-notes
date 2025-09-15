@@ -173,3 +173,8 @@ export interface Commit {
     rendered: Rendered;
     repository: CommitRepository;
 }
+
+export interface Branch {
+    name: string;
+    type: "branch";
+}
